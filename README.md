@@ -23,7 +23,7 @@ https://raw.githubusercontent.com/fraxflax/proton-wg/refs/heads/main/proton-wg.s
 
 From CLI:
 ```
-curl -o /usr/local/bin/curl -o /usr/local/bin/nw-watchdog https://raw.githubusercontent.com/fraxflax/proton-wg/refs/heads/main/proton-wg.sh
+curl -o /usr/local/bin/nw-watchdog https://raw.githubusercontent.com/fraxflax/proton-wg/refs/heads/main/proton-wg.sh
 chmod a+rx /usr/local/bin/proton-wg.sh
 ```
 
