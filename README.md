@@ -1,8 +1,7 @@
 # proton-wg
 proton-wg.sh - ProtonVPN Linux Client WireGuard interface setup script
 
-brings down/up an wireguard interface named wgproton
-and sets up the routing and dns via it 
+brings down/up an wireguard interface and sets up the routing and dns via it 
  
 proton-wg.sh must be run as root
 
