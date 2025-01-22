@@ -202,10 +202,10 @@ down() {
     done
 }
 defaultroute() {
-    ip route show table main | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
+    ip route show table main 2>/dev/null | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
 	eval "ip route add table main $1/32 $DEFAULTROUTE" 2>/dev/null
     done
-    ip route show table default | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
+    ip route show table default 2>/dev/null | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
 	eval "ip route add table default $1/32 $DEFAULTROUTE" 2>/dev/null
     done
 }
@@ -232,7 +232,7 @@ dbg IFACE=$IFACE
 [ -d /etc/wireguard ] || die "No /etc/wireguard directory found"
 
 # ensure we have default route(s) in the main table and/or default table
-( ip route show table main; ip route show table default ) | grep -qE '^default' || \
+( ip route show table main; ip route show table default ) 2>/dev/null | grep -qE '^default' || \
     die "No default route in table main nor in table default"
 
 # Select configuration to use
