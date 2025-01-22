@@ -1,0 +1,111 @@
+## NAME
+__proton-wg.sh__ - ProtonVPN Linux Client WireGuard interface setup script
+
+## SYNOPSIS
+
+__proton-wg.sh__ [ --verbose | --debug ] down
+
+__proton-wg.sh__ [ --verbose | --debug ] up \<CC\> [ rand | \<INDEX\> | rtt | \<CONFIGFILE\> ] [ dns ]
+
+## DESCRIPTION
+
+This script selects among config files that have been generated at
+  https://account.proton.me/vpn/WireGuard
+and downloaded to /etc/wireguard/ named: wgp[a-z]{2}[0-9a-z]+.conf
+where [a-z]{2} is the two letter contrycode and [0-9a-z]+ is the "index"
+using the selected config to bring up an wireguard Proton VPN.
+
+OBSERVE that you need to edit the config files commenting out the
+Address line and the DNS line:
+  #Address = 10.2.0.2/32
+  #DNS = 10.2.0.1
+BUT do not remove the lines, they are expected to be in the file,
+just commented out without whitespace after the #
+
+Examples of of valid config filenames:
+/etc/wireguard/wgpuk142.conf
+/etc/wireguard/wgpch42tor.conf
+
+
+
+ - ProtonVPN Linux Client WireGuard interface setup scriptOPTIONS:
+
+  * __--verbose | --debug__<br>
+    Unless `--verbose` or `--debug` is present, the script will silently
+    (to allow for seamless integration with ifupdown or other network
+    management tools) exit with status 0 on success and status 1 upon
+    errors and failure.
+
+    `--verbose` enables usage and status messages on stdout
+    and error messages on stderr.
+
+    `--debug` adds some information on the internal workings.
+    Must be first argument if present.
+
+  * __down__
+    Bring down all interfaces matching wgp[a-z]{2}
+    restoring the default routing and DNS.
+
+  up
+    Bring up an wireguard interface named wgpcc (cc being the countrycode)
+    and set the default routing via it.
+    As only one wgp interface can be up at any time, it will firstly bring
+    down any existing wgp[a-z]{2} interface.
+
+  <cc>
+    Two letter country code.
+
+  rand
+    Selects random conf for given country-code.
+    (this is the default as well as fallback for ### and <CONFIGFILE>)
+
+  <###>
+    Select config for given country-code with this "index"
+    matching the regex [0-9a-z]+
+
+  rtt
+    Select config for peer with lowest latency (ping rtt).
+
+  <CONFIGFILE>
+    hardcodes the config file to use
+
+  dns
+    Update /etc/resolv.conf with the DNS server from the config file.
+
+
+EXAMPLES:
+
+'proton-wg.sh up ch'
+    will randomly select a config file matching /etc/wireguard/wgpch[0-9a-z]+.conf
+
+'proton-wg.sh up dk rtt dns'
+    will among config files matching /etc/wireguard/wgpdk[0-9a-z]+.conf
+    select the one with lowest latency peer (ping rtt)
+    and update /etc/resolv.conf with the DNS server from the config file
+
+'proton-wg.sh up us 42'
+    will select a config file named /etc/wireguard/wgpus42.conf if present
+    and otherwise randomly select one correctly named 'us' config file 
+
+Example of how one can use this script together with ifupdown:
+
+~~~ /etc/network/interfaces.d/wgproton ~~~
+
+allow noauto wgpch
+iface wgpch inet manual
+      pre-up /bin/sh /path/to/proton-wg.sh up ch rtt dns
+      down /bin/sh /path/to/proton-wg.sh down
+
+allow noauto wgpus
+iface wgpus inet manual
+      pre-up /bin/sh /path/to/proton-wg.sh up us rtt dns
+      down /bin/sh /path/to/proton-wg.sh down
+
+DEPENDENCIES:
+
+  This script depends on being executed as root in a POSIX compliant
+  shell environment with the following utilities available:
+    cat cut grep head id ip ls sed shuf wc wg
+
+  To ensure this in a Debian based distribution:
+    sudo apt install dash coreutils sed iproute2 wireguard-tools
