@@ -134,7 +134,7 @@ iface wgpus inet manual
 
 ## DEPENDENCIES
 
-POSIX shell environment with the following utilities available:<br>
+This script depends on being executed as root in a POSIX shell environment with the following utilities available:<br>
 cat cut grep head id ip ls sed shuf wc wg
 
 To ensure this in a Debian based distribution:<br>
