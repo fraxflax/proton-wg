@@ -18,7 +18,7 @@ to contact me via e-mail: Fredrik Ax &lt;proton-wg@axnet.nu&gt;<br>
 certain subnets via ProtonVPN, feel free to contact me)
 
 ## INSTALL
-Just copy / download the `nw-watchdog` script into your PATH and make it executable.<br>
+Just copy / download the `proton-wg.sh` script into your PATH and make it executable.<br>
 
 # USAGE
 
