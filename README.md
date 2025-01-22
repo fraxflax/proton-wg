@@ -134,7 +134,7 @@ iface wgpus inet manual
 
 ## DEPENDENCIES
 
-shell environment with the following utilities available:<br>
+POSIX shell environment with the following utilities available:<br>
 cat cut grep head id ip ls sed shuf wc wg
 
 To ensure this in a Debian based distribution:<br>
