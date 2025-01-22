@@ -89,7 +89,7 @@ Examples of of valid config filenames:
     Selects random conf for given country-code.
     (this is the default as well as fallback for ### and <CONFIGFILE>)
 
-  * __<ins>INDEX</ins>
+  * __<ins>INDEX</ins>__<br>
     Select config for given country-code with this "index"
     matching the regex [0-9a-z]+
 
