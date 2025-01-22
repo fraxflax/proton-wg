@@ -5,7 +5,7 @@ brings down/up an ProtonVPN WireGuard interface and sets up the routing and dns 
  
 proton-wg.sh must be run as root
 
-proton-wg.sh is free software written by Fredrik Ax <proton-wg@axnet.nu><br>
+proton-wg.sh is free software written by Fredrik Ax &lt;proton-wg@axnet.nu&gt;<br>
 Feel free to modify and/or (re)distribute it in any way you like.
 (It's always nice to be mentioned though ;-) )
 
@@ -13,7 +13,7 @@ proton-wg.sh comes with ABSOLUTELY NO WARRANTY.
 
 If you expirence any problems with proton-wg.sh, are lacking any
 functionality or just want to voice your opions about it, feel free
-to contact me via e-mail: Fredrik Ax <proton-wg@axnet.nu>
+to contact me via e-mail: Fredrik Ax &lt;proton-wg@axnet.nu&gt;<br>
 (also, if you need a script for setting up a Linux router to route 
 certain subnets via ProtonVPN, feel free to contact me)
 
