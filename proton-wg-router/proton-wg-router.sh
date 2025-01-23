@@ -240,6 +240,6 @@ ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null
 	    ip route show table $t
 	}
     done
+    printf '###\n'
 }
-printf '###\n'
 exit 0
