@@ -27,7 +27,7 @@ DSTviaPROTON=''
 # These destinations are always routed via the default route, also
 # from SRCviaPROTON listed CIDRs
 # and has precedence over DSTviaPROTON if intersecting
-DSTviaDEFAULT='10.0.0.0/8 172.16.0.0/14 192.168.0.0/16'
+DSTviaDEFAULT='10.0.0.0/8 172.16.0.0/12 192.168.0.0/16'
 
 # These sources are routed via Proton by default unless they are also
 # listed in SRCviaDEFAULT
