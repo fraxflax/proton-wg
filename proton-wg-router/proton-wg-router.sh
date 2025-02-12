@@ -38,6 +38,9 @@ SRCviaPROTON='10.46.254.0/24'
 # and has precedence over SRCviaPROTON if intersecting
 SRCviaDEFAULT='10.46.254.212/30'
 
+# File to set the proton as first dns forwarder in using --named
+NAMEDCONF='/etc/bind/named.conf.options'
+
 ##############################################################################
 # Do not change variables below this point
 # unless you really know what you are doing :-)
@@ -59,8 +62,14 @@ verbose() { [ "$VERBOSE" ] && printf '%s\n' "$*" >&2 ; }
 DBG=
 [ "$1" = '--debug' ] && { DBG=y ; SILENT='' ; shift ; }
 
+RESOLV=
+[ "$1" = '--dns' ] && { RESOLV='/etc/resolv.conf' ; shift ; }
+
+BIND=
+[ "$1" = '--named' ] && { BIND=y ; shift ; }
+
 dbg() { [ "$DBG" ] && printf '%s\n' "$*" >&2 ; }
-inf() { [ $SILENT ] || printf '%s\n' "$*" ; }
+wrn() { [ $SILENT ] || printf '%s\n' "$*" >&2 ; }
 die() { printf '%s\n' "$*" >&2 ; exit 1 ; }
 
 defaultroute() {
@@ -76,6 +85,9 @@ dbg _viaDEFAULTdefaultprio=$_viaDEFAULTdefaultprio
 dbg _viaPROTONprio=$_viaPROTONprio
 dbg _all2mainprio=$_all2mainprio
 dbg _all2defaultprio=$_all2defaultprio
+dbg RESOLV=$RESOLV
+dbg BIND=$BIND
+dbg NAMEDCONF=$NAMEDCONF
 
 ##############################################################################
 # Check that things are as we expect them to be
@@ -113,6 +125,12 @@ down() {
     ip link del dev $IFACE 2>/dev/null
     ip link add dev $IFACE type wireguard
     ip link set down dev $IFACE
+
+    # Always remove bind forward config pointing to $GW if it exists
+    [ -w "$NAMEDCONF" ] \
+	&& grep -qE "^\\s*forwarders\\s*{\\s*[0-9.]+;\\s*\$" "$NAMEDCONF" \
+	&& perl -pi -e "s/^(\\s*forwarders\\s*{)\\s*[0-9.]+;\\s*\$/\$1\\n/" "$NAMEDCONF" \
+	&& which rndc >/dev/null && rndc reload >/dev/null 2>&1
 }
 case $1 in
     up)	: ;;
@@ -129,6 +147,11 @@ esac
 printf '%s' "$2" | grep -qE '^[a-z]{2}$' || die usage 'Invalid country-code'
 CC=$2
 
+[ "$BIND" ] && {
+    [ -w "$NAMEDCONF" ] || die "--named file '$NAMEDCONF' not found or not writable ... aborting!"
+    grep -qE '^\s*forwarders\s*{\s*$' "$NAMEDCONF" || die "must have a 'forwarders' section in '$NAMEDCONF' with initial line 'forwarders {' and nothing more ... aborting!"
+    rndc status > /dev/null 2>&1 || die "rndc not available in PATH or 'rndc status' failed ... aborting!"
+}
 
 CONF=
 PEER=
@@ -230,6 +253,11 @@ for cidr in $DSTviaPROTON; do
     ip rule add to $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
 done
 ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null 
+
+[ "$BIND" ] && {
+    perl -pi -e "s/^(\\s*forwarders\s*{)\\s*\$/\$1 $GW;\n/" "$NAMEDCONF"
+    rndc reload 2>/dev/null || wrn "WARNING: 'rndc reload' failed."
+}
 
 [ $SILENT ] || {
     printf '\n### Routing ###\n# Rules:\n'
