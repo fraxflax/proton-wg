@@ -11,6 +11,9 @@
 # use ProtonVPN DNS servers (e.g. by using iptables to redirect DNS)
 #
 
+##############################################################################
+### These variables needs to be correctly set to match your environment
+###
 # INTERFACE NAME
 # The name of the Wireguard interface to be used for ProtonVPN
 IFACE=wgproton
@@ -38,12 +41,47 @@ SRCviaPROTON='10.46.254.0/24'
 # and has precedence over SRCviaPROTON if intersecting
 SRCviaDEFAULT='10.46.254.212/30'
 
-# File to set the proton as first dns forwarder in using --named
+##############################################################################
+### This needs to be configured only if you intend to use the
+### --named option (to set Proton as dns forwarder)
+### 
+# This is a bit clonky but it works fine for me
+# 
+# ( ... one day I might make it more intelligent actually figuring the
+# existing (potentiall multi-line) forwarder statement from existing
+# bind config and comment it out whilst adding the new one restoring
+# it upong 'down' or if we cannot resolve via the GW ... )
+#
+# What '--named up' does is to replace the existing forwarders
+# statement (MUST be on a single line) statements in $NAMEDCONF
+# adding the proton DNS as the only forwarder
+#
+# upon down it will replace the existing forwarders statement with
+# $NAMEDFORWARDERS
+
+# File to replace forwarders statement in when using --named
 NAMEDCONF='/etc/bind/named.conf.options'
 
+# If you do not use a forwarders statement at all in your $NAMEDCONF
+# set this variable to exactly this (you can leave the next line as is)
+# and just comment out the NAMEDFORWARDERS line below).
+NAMEDFORWARDERS='//forwarders { };'
+# OBSERVE you also need to make sure it's in the options section of the
+# $NAMEDCONF file: e.g. like this
+# options {
+#         //forwarders { };
+# ...
+# and that there are no more forwarders statements, not even commented out,
+# in the $NAMEDCONF file.
+
+# If you use a forwarders statement define it on a single line here:
+NAMEDFORWARDERS='forwarders { 1.1.1.1; 1.0.0.1; 8.8.8.8; 8.8.4.4; };'
+# and also make sure there is a single line forwarders statement in
+# the $NAMEDCONF file
+
 ##############################################################################
-# Do not change variables below this point
-# unless you really know what you are doing :-)
+### Do not change variables (or anything else) below this point,
+### unless you really know what you are doing ;-)
 
 # prios for linux default 'from all lookup main' rule,
 # and 'from all lookup default' rule
@@ -126,10 +164,10 @@ down() {
     ip link add dev $IFACE type wireguard
     ip link set down dev $IFACE
 
-    # Always remove bind forward config pointing to $GW if it exists
+    # Always restore bind forwarders config it exists
     [ -w "$NAMEDCONF" ] \
-	&& grep -qE "^\\s*forwarders\\s*{\\s*[0-9.]+;\\s*\$" "$NAMEDCONF" \
-	&& perl -pi -e "s/^(\\s*forwarders\\s*{)\\s*[0-9.]+;\\s*\$/\$1\\n/" "$NAMEDCONF" \
+	&& [ 1 -eq $(grep -cE "^\\s*(//\\s*)?forwarders\\s*\\{.*\\};\\s*$" "$NAMEDCONF") ] \
+	&& perl -pi -e "s|(^\\s*)(//\\s*)?forwarders\\s*\\{.*\\};\\s*$|\$1$NAMEDFORWARDERS\\n|" "$NAMEDCONF" \
 	&& which rndc >/dev/null && rndc reload >/dev/null 2>&1
 }
 case $1 in
@@ -149,7 +187,8 @@ CC=$2
 
 [ "$BIND" ] && {
     [ -w "$NAMEDCONF" ] || die "--named file '$NAMEDCONF' not found or not writable ... aborting!"
-    grep -qE '^\s*forwarders\s*{\s*$' "$NAMEDCONF" || die "must have a 'forwarders' section in '$NAMEDCONF' with initial line 'forwarders {' and nothing more ... aborting!"
+    [ 1 -eq $(grep -cE "^\\s*(//\\s*)?forwarders\\s*\\{.*\\};\\s*$" "$NAMEDCONF") ] \
+	|| die "must have exactly one a single line 'forwarders' statement in '$NAMEDCONF' ... aborting!"
     rndc status > /dev/null 2>&1 || die "rndc not available in PATH or 'rndc status' failed ... aborting!"
 }
 
@@ -255,7 +294,8 @@ done
 ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null 
 
 [ "$BIND" ] && {
-    perl -pi -e "s/^(\\s*forwarders\s*{)\\s*\$/\$1 $GW;\n/" "$NAMEDCONF"
+    #perl -pi -e "s/^(\\s*forwarders\s*{)\\s*\$/\$1 $GW;\n/" "$NAMEDCONF"
+    perl -pi -e "s|^(\\s*(//\\s*)?forwarders\\s*\\{).*\\};\\s*$|\$1 $GW; };\n|" "$NAMEDCONF" \
     rndc reload 2>/dev/null || wrn "WARNING: 'rndc reload' failed."
 }
 
