@@ -168,7 +168,7 @@ down() {
     [ -w "$NAMEDCONF" ] \
 	&& [ 1 -eq $(grep -cE "^\\s*(//\\s*)?forwarders\\s*\\{.*\\};\\s*$" "$NAMEDCONF") ] \
 	&& perl -pi -e "s|(^\\s*)(//\\s*)?forwarders\\s*\\{.*\\};\\s*$|\$1$NAMEDFORWARDERS\\n|" "$NAMEDCONF" \
-	&& which rndc >/dev/null && rndc reload >/dev/null 2>&1
+	&& which rndc >/dev/null && { rndc flush 2>/dev/null ; rndc reload >/dev/null 2>&1 ;}
 }
 case $1 in
     up)	: ;;
@@ -296,6 +296,7 @@ ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null
 [ "$BIND" ] && {
     #perl -pi -e "s/^(\\s*forwarders\s*{)\\s*\$/\$1 $GW;\n/" "$NAMEDCONF"
     perl -pi -e "s|^(\\s*(//\\s*)?forwarders\\s*\\{).*\\};\\s*$|\$1 $GW; };\n|" "$NAMEDCONF" \
+    rndc flush 2>/dev/null 
     rndc reload 2>/dev/null || wrn "WARNING: 'rndc reload' failed."
 }
 
