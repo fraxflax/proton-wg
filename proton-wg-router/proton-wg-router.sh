@@ -178,11 +178,11 @@ case $1 in
 	#...
 	exit 0
 	;;
-    *) die usage 'Invalid command (up/down)' ;;
+    *) die 'Invalid command (up/down)' ;;
 esac
 
 # two letter country code?
-printf '%s' "$2" | grep -qE '^[a-z]{2}$' || die usage 'Invalid country-code'
+printf '%s' "$2" | grep -qE '^[a-z]{2}$' || die 'Invalid country-code'
 CC=$2
 
 [ "$BIND" ] && {
