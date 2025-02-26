@@ -218,6 +218,12 @@ case $1 in
 	    printf '\n--- dns ---\n'
 	    cat /etc/resolv.conf
 	}
+	printf '\n--- routing ---\n# main table:\n'
+	ip route show table main
+	[ $(ip route show table default 2>/dev/null | wc -l) -gt 0 ] && {
+	    printf '# default table:\n'
+	    ip route show table default
+	}
 	exit 0
 	;;
     *) usage ;;
@@ -334,14 +340,14 @@ ip route add table main 128.0.0.0/1 via $GW dev $IFACE src $ADDR
 [ $VERBOSE ] && {
     printf '\n--- interface ---\n'
     ip addr show dev $IFACE
-    printf '\n--- wireguard ---\n'
-    wg show $IFACE
     printf '\n--- routing ---\n# main table:\n'
     ip route show table main
     [ $(ip route show table default 2>/dev/null | wc -l) -gt 0 ] && {
 	printf '# default table:\n'
 	ip route show table default
     }
+    printf '\n--- wireguard ---\n'
+    wg show $IFACE
 }
 	cat /etc/resolv.conf > /etc/resolv.conf.wgprotonbakup
 [ "$DNS" ] && { 
