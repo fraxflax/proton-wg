@@ -34,9 +34,9 @@ __proton-wg.sh__ - ProtonVPN Linux Client WireGuard interface setup script
 
 ## SYNOPSIS
 
-__proton-wg.sh__ [ --silent ] down
-
 __proton-wg.sh__ [ --silent ] up <ins>CC</ins> [ rand | <ins>INDEX</ins> | rtt | <ins>CONFIGFILE</ins> ] [ dns ]
+
+__proton-wg.sh__ [ --silent ] down
 
 ## DESCRIPTION
 
@@ -72,12 +72,6 @@ Examples of of valid config filenames:
     (to allow for seamless integration with ifupdown or other network
     management tools) exit with status 0 on success and status 1 upon
     errors and failure.
-
-    `--verbose` enables usage and status messages on stdout
-    and error messages on stderr.
-
-    `--debug` adds some information on the internal workings.
-    Must be first argument if present.
 
   * __down__<br>
     Bring down all interfaces matching `wgp[a-z]{2}` restoring the default routing and DNS.
