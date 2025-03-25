@@ -193,6 +193,7 @@ down() {
     }
     for ifc in $(ip link show | grep -oE '^[0-9]+: wgp[a-z]{2}:' | grep -oE 'wgp[a-z]{2}'); do
 	ip link del dev $ifc
+	ip link add dev $ifc type wireguard
     done
 }
 defaultroute() {
@@ -322,6 +323,7 @@ defaultroute $PEER
 ping -q -c1 -w3 $PEER >/dev/null || die "Peer $PEER not reachable"
 
 down
+ip link del dev $IFACE 2>/dev/null
 ip link add dev $IFACE type wireguard || die  "Failed to add interface"
 ip address add $ADDR peer $GW dev $IFACE || die "Failed to set address"
 wg setconf $IFACE $CONF || die "Failed to set wireguard configuration"
