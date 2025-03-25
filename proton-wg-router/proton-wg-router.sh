@@ -216,10 +216,12 @@ case $3 in
 	for C in $(ls -1 /etc/wireguard/ | grep -E "^wgp$CC[0-9a-z]+.conf$"); do
 	    P=$(grep -E '^Endpoint = ' "/etc/wireguard/$C" | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])')
 	    [ "$P" ] || continue
+	    [ "$SILENT" ] || printf 'RTT %s %s: ' "$C" "$P"
 	    # ensure peer is available via default route
 	    defaultroute $P
 	    R=$(ping -q -c3 -W1 $P | grep -E '^rtt' | sed -E 's/.* = [0-9.]+\/([0-9.]+).*/\1/')
-	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || continue
+	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || { [ "$SILENT" ] || printf 'no reply'; continue; }
+	    [ "$SILENT" ] || printf '%s ms\n' "$R"
 	    RI=${R%.*} 
 	    RD=${R#*.}; RD=${RD##*0}; [ "$RD" ] || RD=0
 	    R=$((RI*1000+RD))
