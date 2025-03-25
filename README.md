@@ -123,13 +123,13 @@ Example of how one can use this script together with ifupdown:
 ```
 allow noauto wgpch
 iface wgpch inet manual
-      pre-up /bin/sh /path/to/proton-wg.sh up ch rtt dns
-      down /bin/sh /path/to/proton-wg.sh down
+      pre-up /bin/sh /path/to/proton-wg.sh --silent up ch rtt dns
+      down /bin/sh /path/to/proton-wg.sh --silent down
 
 allow noauto wgpus
 iface wgpus inet manual
-      pre-up /bin/sh /path/to/proton-wg.sh up us rtt dns
-      down /bin/sh /path/to/proton-wg.sh down
+      pre-up /bin/sh /path/to/proton-wg.sh --silent up us dns
+      down /bin/sh /path/to/proton-wg.sh --silent down
 ```
 
 ## DEPENDENCIES
