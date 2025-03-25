@@ -87,7 +87,7 @@ Examples of of valid config filenames:
 
   * __rand__<br>
     Selects random conf for given country-code.
-    (this is the default as well as fallback for ### and <CONFIGFILE>)
+    (this is the default as well as fallback for ### and <ins>CONFIGFILE</ins>)
 
   * __<ins>INDEX</ins>__<br>
     Select config for given country-code with this "index"
