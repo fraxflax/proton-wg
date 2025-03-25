@@ -36,8 +36,8 @@ SRCviaPROTON='10.46.254.0/24'
 
 # These sources are by explicitly default routed via the default route
 # and has precedence over SRCviaPROTON if intersecting
-SRCviaDEFAULT='10.46.254.213'
-#10.46.254.212/30'
+#SRCviaDEFAULT='10.46.254.213'
+SRCviaDEFAULT='10.46.254.212/30'
 
 ##############################################################################
 ### This needs to be configured only if you intend to use the
