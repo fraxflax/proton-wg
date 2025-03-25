@@ -221,10 +221,8 @@ case $3 in
 	    R=$(ping -q -c3 -W1 $P | grep -E '^rtt' | sed -E 's/.* = [0-9.]+\/([0-9.]+).*/\1/')
 	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || continue
 	    RI=${R%.*} 
-	    RD=${R#*.}
-	    RD=$(printf '%03d' "$RD" | cut -c1-3)
-	    #dbg $R = $RI.$RD
-	    R=$((RI*1000+RD)) #; dbg R=$R
+	    RD=${R#*.}; RD=${RD##*0}; [ "$RD" ] || RD=0
+	    R=$((RI*1000+RD))
 	    dbg "$P RTT $R < $RTT ???" 
 	    [ $R -lt $RTT ] && {
 		RTT=$R
