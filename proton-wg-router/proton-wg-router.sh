@@ -14,9 +14,6 @@
 ##############################################################################
 ### These variables needs to be correctly set to match your environment
 ###
-# INTERFACE NAME
-# The name of the Wireguard interface to be used for ProtonVPN
-IFACE=wgproton
 
 # The below *via* variables are space separated lists of source or
 # destination CIDRs determining which traffic should be routerd via
@@ -39,7 +36,7 @@ SRCviaPROTON='10.46.254.0/24'
 
 # These sources are by explicitly default routed via the default route
 # and has precedence over SRCviaPROTON if intersecting
-SRCviaDEFAULT='10.46.254.213/32'
+SRCviaDEFAULT='10.46.254.213'
 #10.46.254.212/30'
 
 ##############################################################################
@@ -83,6 +80,11 @@ NAMEDFORWARDERS='forwarders { 1.1.1.1; 1.0.0.1; 8.8.8.8; 8.8.4.4; };'
 ##############################################################################
 ### Do not change variables (or anything else) below this point,
 ### unless you really know what you are doing ;-)
+
+# Interface prefix name of interface to be used will depend on the
+# country code. So with the default of IFACE=wgp the interface will be
+# named wgpse, wgpus, wgpde, etc depending on the country code.
+IFACE=wgp
 
 # prios for linux default 'from all lookup main' rule,
 # and 'from all lookup default' rule
@@ -146,31 +148,45 @@ done
 ##############################################################################
 # commands
 down() {
-    ip route del default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null 
-    for cidr in $SRCviaPROTON; do
-	ip rule del from $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
+    if [ "$CC" ]; then
+	IFACES="$IFACE$CC"
+    else
+	IFACES=$(ip link | grep -oE ":\s+${IFACE}[a-z]{2}:\s(<UP[,>]|<[^<]+,UP[,>])" | grep -oE "^${IFACE}[a-z]{2}")
+    fi
+    for ifc in $IFACES; do
+	ip route del default via $GW dev $ifc table $_viaPROTONprio 2>/dev/null 
+	for cidr in $SRCviaPROTON; do
+	    ip rule del from $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
+	done
+	for cidr in $DSTviaPROTON; do
+	    ip rule del to $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
+	done
+	for cidr in $DSTviaDEFAULT; do
+	    ip rule del to $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
+	    ip rule del to $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
+	done
+	for cidr in $SRCviaDEFAULT; do
+	    ip rule del from $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
+	    ip rule del from $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
+	done
+	ip link del dev $ifc 2>/dev/null
+	ip link add dev $ifc type wireguard
+	ip link set down dev $ifc
     done
-    for cidr in $DSTviaPROTON; do
-	ip rule del to $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
-    done
-    for cidr in $DSTviaDEFAULT; do
-	ip rule del to $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
-	ip rule del to $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
-    done
-    for cidr in $SRCviaDEFAULT; do
-	ip rule del from $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
-	ip rule del from $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
-    done
-    ip link del dev $IFACE 2>/dev/null
-    ip link add dev $IFACE type wireguard
-    ip link set down dev $IFACE
-
     # Always restore bind forwarders config it exists
     [ -w "$NAMEDCONF" ] \
 	&& [ 1 -eq $(grep -cE "^\\s*(//\\s*)?forwarders\\s*\\{.*\\};\\s*$" "$NAMEDCONF") ] \
 	&& perl -pi -e "s|(^\\s*)(//\\s*)?forwarders\\s*\\{.*\\};\\s*$|\$1$NAMEDFORWARDERS\\n|" "$NAMEDCONF" \
 	&& which rndc >/dev/null && { rndc flush 2>/dev/null ; rndc reload >/dev/null 2>&1 ;}
 }
+# two letter country code?
+if printf '%s' "$2" | grep -qE '^[a-z]{2}$'; then
+    CC=$2
+else
+    [ "$1" = down ] || die 'Invalid country-code'
+    CC=''
+fi
+
 case $1 in
     up)	: ;;
     down)
@@ -179,12 +195,8 @@ case $1 in
 	#...
 	exit 0
 	;;
-    *) die 'Invalid command (up/down)' ;;
+    *) die 'Invalid command (not up/down)' ;;
 esac
-
-# two letter country code?
-printf '%s' "$2" | grep -qE '^[a-z]{2}$' || die 'Invalid country-code'
-CC=$2
 
 [ "$BIND" ] && {
     [ -w "$NAMEDCONF" ] || die "--named file '$NAMEDCONF' not found or not writable ... aborting!"
@@ -274,6 +286,8 @@ ping -q -c1 -w3 $PEER >/dev/null || die "Peer $PEER not reachable"
 
 down
 
+IFACE="$IFACE$CC"
+ip link show dev $IFACE >/dev/null 2>&1 || ip link add dev $IFACE type wireguard
 ip address add $ADDR peer $GW dev $IFACE || exit 1
 wg setconf $IFACE $CONF || exit 1
 ip link set up dev $IFACE || exit 1
