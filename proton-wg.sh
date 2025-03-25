@@ -62,7 +62,7 @@ Examples of of valid config filenames:
 
 USAGE:
 
-  $protonwg [ --verbose | --debug ]  down | up ...
+  $protonwg [ --silent ]  down | up ...
 
   $protonwg down
 
@@ -71,15 +71,11 @@ USAGE:
 
 OPTIONS:
 
-  --verbose | --debug
-    Unless --verbose and/or --debug is present, the script will silently
+  --silent
+    If --silent is present, the script will silently
     (to allow for seamless integration with ifupdown or other network
     management tools) exit with status 0 on success and status 1 upon
     errors and failure.
-    --verbose enables usage and status messages on stdout
-    and error messages on stderr.
-    --debug adds some information on the internal workings.
-    Must be first argument if present.
 
   down
     Bring down all interfaces matching wgp[a-z]{2}
@@ -158,12 +154,10 @@ EOF
     exit 1
 }
 
-VERBOSE=''
-[ "$1" = '--verbose' ] && { VERBOSE=y ; shift ; }
+VERBOSE='y'; [ "$1" = '--silent' ] && { VERBOSE=''; shift; }
 verbose() { [ "$VERBOSE" ] && printf '%s\n' "$*" >&2 ; }
 
-DBG=''
-[ "$1" = '--debug' ] && { DBG=y ; VERBOSE=y ; shift ; }
+DBG=''; [ "$1" = '--debug' ] && { DBG=y; VERBOSE=y; shift; }
 dbg() { [ "$DBG" ] && printf '%s\n' "$*" >&2 ; }
 
 die() { verbose "$@" ; exit 1 ; }
@@ -217,12 +211,12 @@ case $1 in
 	[ $VERBOSE ] && {
 	    printf '\n--- dns ---\n'
 	    cat /etc/resolv.conf
-	}
-	printf '\n--- routing ---\n# main table:\n'
-	ip route show table main
-	[ $(ip route show table default 2>/dev/null | wc -l) -gt 0 ] && {
-	    printf '# default table:\n'
-	    ip route show table default
+	    printf '\n--- routing ---\n# main table:\n'
+	    ip route show table main
+	    [ $(ip route show table default 2>/dev/null | wc -l) -gt 0 ] && {
+		printf '# default table:\n'
+		ip route show table default
+	    }
 	}
 	exit 0
 	;;
@@ -262,10 +256,12 @@ case $3 in
 	    P=$(grep -E '^Endpoint = ' "/etc/wireguard/$C" | \
 		    grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])')
 	    [ "$P" ] || continue
+	    [ "$VERBOSE" ] && printf 'RTT %s %s: ' "$C" "$P"
 	    # ensure peer is available via default route
 	    defaultroute $P
 	    R=$(ping -q -c3 -W1 $P | grep -E '^rtt' | sed -E 's/.* = [0-9.]+\/([0-9.]+).*/\1/')
-	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || continue
+	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || { verbose 'no reply'; continue; }
+	    verbose "$R ms"
 	    RI=${R%.*} 
 	    RD=${R#*.}
 	    RD=$(printf '%03d' "$RD" | cut -c1-3)
