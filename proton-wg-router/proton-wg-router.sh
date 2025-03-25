@@ -97,22 +97,13 @@ _viaPROTONprio=$((_all2mainprio-1))
 _viaDEFAULTdefaultprio=$((_viaPROTONprio-1))
 _viaDEFAULTmainprio=$((_viaDEFAULTdefaultprio-1))
 
-SILENT=
-[ "$1" = '--silent' ] && { SILENT=y ; shift ; }
-verbose() { [ "$VERBOSE" ] && printf '%s\n' "$*" >&2 ; }
-DBG=
-[ "$1" = '--debug' ] && { DBG=y ; SILENT='' ; shift ; }
-
-RESOLV=
-[ "$1" = '--dns' ] && { RESOLV='/etc/resolv.conf' ; shift ; }
-
-BIND=
-[ "$1" = '--named' ] && { BIND=y ; shift ; }
-
-dbg() { [ "$DBG" ] && printf '%s\n' "$*" >&2 ; }
-wrn() { [ $SILENT ] || printf '%s\n' "$*" >&2 ; }
 die() { printf '%s\n' "$*" >&2 ; exit 1 ; }
-
+SILENT=''; [ "$1" = '--silent' ] && { SILENT=y ; shift ; }
+wrn() { [ "$SILENT" ] || printf '%s\n' "$*" >&2 ; }
+DBG='' ; [ "$1" = '--debug' ] && { DBG=y ; SILENT='' ; shift ; }
+dbg() { [ "$DBG" ] && printf '%s\n' "$*" >&2 ; }
+RESOLV=''; [ "$1" = '--dns' ] && { RESOLV='/etc/resolv.conf' ; shift ; }
+BIND='';   [ "$1" = '--named' ] && { BIND=y ; shift ; }
 defaultroute() {
     ip route show table main 2>/dev/null | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
 	eval "ip route add table main $1 $DEFAULTROUTE" 2>/dev/null
@@ -145,16 +136,27 @@ done
 ( ip route show table main; ip route show table default ) 2>/dev/null | grep -qE '^default' || \
     die 'No default route in table main nor in table default ... aborting!'
 
+info() {
+    printf '\n### Routing ###\n# Rules:\n'
+    ip rule | grep -E "^($_all2mainprio|$_all2defaultprio|$_viaDEFAULTmainprio|$_viaDEFAULTdefaultprio|$_viaPROTONprio):" #| sort -n
+    for t in $_viaPROTONprio main default; do
+	printf '\n# Table %s:\n' $t
+	[ $(ip route show table $t 2>/dev/null | wc -l) -gt 0 ] && { # don't show empty table error
+	    ip route show table $t
+	}
+    done
+    printf '###\n'
+}
 ##############################################################################
 # commands
 down() {
     if [ "$CC" ]; then
 	IFACES="$IFACE$CC"
     else
-	IFACES=$(ip link | grep -oE ":\s+${IFACE}[a-z]{2}:\s(<UP[,>]|<[^<]+,UP[,>])" | grep -oE "^${IFACE}[a-z]{2}")
+	IFACES=$(ip link | grep -oE "^[0-9]+:\s+${IFACE}[a-z]{2}:\s" | grep -oE "${IFACE}[a-z]{2}")
     fi
     for ifc in $IFACES; do
-	ip route del default via $GW dev $ifc table $_viaPROTONprio 2>/dev/null 
+	ip route del default via $GW dev $ifc table $_viaPROTONprio 2>/dev/null
 	for cidr in $SRCviaPROTON; do
 	    ip rule del from $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
 	done
@@ -191,8 +193,7 @@ case $1 in
     up)	: ;;
     down)
 	down
-	# cleanup
-	#...
+	[ $SILENT ] || info
 	exit 0
 	;;
     *) die 'Invalid command (not up/down)' ;;
@@ -315,15 +316,5 @@ ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null
     rndc reload 2>/dev/null || wrn "WARNING: 'rndc reload' failed."
 }
 
-[ $SILENT ] || {
-    printf '\n### Routing ###\n# Rules:\n'
-    ip rule | grep -E "^($_all2mainprio|$_all2defaultprio|$_viaDEFAULTmainprio|$_viaDEFAULTdefaultprio|$_viaPROTONprio):" #| sort -n
-    for t in $_viaPROTONprio main default; do
-	printf '\n# Table %s:\n' $t
-	[ $(ip route show table $t 2>/dev/null | wc -l) -gt 0 ] && { # don't show empty table error
-	    ip route show table $t
-	}
-    done
-    printf '###\n'
-}
+[ $SILENT ] || { info ; ping -q -c1 -w1 $GW >/dev/null ; wg show $IFACE ; }
 exit 0
