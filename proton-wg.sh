@@ -263,9 +263,7 @@ case $3 in
 	    printf '%s' "$R" | grep -qE '^[0-9.]+$' || { verbose 'no reply'; continue; }
 	    verbose "$R ms"
 	    RI=${R%.*} 
-	    RD=${R#*.}
-	    RD=$(printf '%03d' "$RD" | cut -c1-3)
-	    #dbg $R = $RI.$RD
+	    RD=${R#*.}; RD=${RD##*0}; [ "$RD" ] || RD=0
 	    R=$((RI*1000+RD)) #; dbg R=$R
 	    dbg "$P RTT $R < $RTT ???" 
 	    [ $R -lt $RTT ] && {
