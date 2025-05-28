@@ -34,11 +34,10 @@ DSTviaDEFAULT='10.0.0.0/8 172.16.0.0/12 192.168.0.0/16'
 #          https://www.bankid.com/en/foretag/enterprise/communication-between-bankid-security-application-and-the-bankid-servers
 #          https://www.bankid.com/foretag/enterprise/kommunikation-mellan-bankid-sakerhetsprogram-och-bankid-servern
 #        )
-for addr in $(
-		 for hst in cavainternal.bankid.com cavanotification.bankid.com loke.bankid.com mexx.bankid.com ; do
-	  	            #cavainternal.test.bankid.com cavanotification.test.bankid.comloke.test.bankid.com mexx.test.bankid.com; do  
-		     getent ahostsv4 $hst | grep -oEe '(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))'
-		 done | sort | uniq
+for addr in $(for hst in cavainternal.bankid.com cavanotification.bankid.com loke.bankid.com mexx.bankid.com ; do
+	                 #cavainternal.test.bankid.com cavanotification.test.bankid.comloke.test.bankid.com mexx.test.bankid.com; do  
+		  getent ahostsv4 $hst | grep -oEe '(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))'
+	      done | sort | uniq
 	     ); do
     DSTviaDEFAULT="$DSTviaDEFAULT $addr"
 done
