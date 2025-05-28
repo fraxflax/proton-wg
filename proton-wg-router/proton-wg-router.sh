@@ -27,10 +27,18 @@ DSTviaPROTON=''
 # These destinations are always routed via the default route, also
 # from SRCviaPROTON listed CIDRs
 # and has precedence over DSTviaPROTON if intersecting
-# ( first line is Privat IP ranges,
-#   rest is for ZoomMeeting ( from https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0060548 )
-DSTviaDEFAULT='
-10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+# Privat IP ranges
+DSTviaDEFAULT='10.0.0.0/8 172.16.0.0/12 192.168.0.0/16'
+
+# BankID ( from
+#          https://www.bankid.com/en/foretag/enterprise/communication-between-bankid-security-application-and-the-bankid-servers
+#          https://www.bankid.com/foretag/enterprise/kommunikation-mellan-bankid-sakerhetsprogram-och-bankid-servern
+#        )
+DSTviaDEFAULT="$DSTviaDEFAULT
+185.198.4.18/32 185.198.4.19/32 185.198.6.16/32 185.198.6.14/32"
+
+# ZoomMeeting ( from https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0060548 )
+DSTviaDEFAULT="$DSTviaDEFAULT
 101.36.167.0/24
 101.36.170.0/23
 103.122.166.0/23
@@ -111,7 +119,7 @@ DSTviaDEFAULT='
 69.174.57.0/24
 8.5.128.0/23
 99.79.20.0/25
-'
+"
 
 # These sources are routed via Proton by default unless they are also
 # listed in SRCviaDEFAULT
