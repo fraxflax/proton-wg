@@ -34,8 +34,14 @@ DSTviaDEFAULT='10.0.0.0/8 172.16.0.0/12 192.168.0.0/16'
 #          https://www.bankid.com/en/foretag/enterprise/communication-between-bankid-security-application-and-the-bankid-servers
 #          https://www.bankid.com/foretag/enterprise/kommunikation-mellan-bankid-sakerhetsprogram-och-bankid-servern
 #        )
-DSTviaDEFAULT="$DSTviaDEFAULT
-185.198.4.18/32 185.198.4.19/32 185.198.6.16/32 185.198.6.14/32"
+for addr in $(
+		 for hst in cavainternal.bankid.com cavanotification.bankid.com loke.bankid.com mexx.bankid.com ; do
+	  	            #cavainternal.test.bankid.com cavanotification.test.bankid.comloke.test.bankid.com mexx.test.bankid.com; do  
+		     getent ahostsv4 $hst | grep -oEe '(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))'
+		 done | sort | uniq
+	     ); do
+    DSTviaDEFAULT="$DSTviaDEFAULT $addr"
+done
 
 # ZoomMeeting ( from https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0060548 )
 DSTviaDEFAULT="$DSTviaDEFAULT
