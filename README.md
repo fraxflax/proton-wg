@@ -96,7 +96,7 @@ Examples of of valid config filenames:
   * __rtt__<br>
     Select config for peer with lowest latency (ping rtt).
 
-  __<ins>CONFIGFILE</ins>__<br>
+  * __<ins>CONFIGFILE</ins>__<br>
     hardcodes the config file to use
 
   * __dns__<br>
