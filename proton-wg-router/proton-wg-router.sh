@@ -134,7 +134,7 @@ SRCviaPROTON='10.46.254.0/24'
 # These sources are by explicitly default routed via the default route
 # and has precedence over SRCviaPROTON if intersecting
 #SRCviaDEFAULT='10.46.254.213'
-SRCviaDEFAULT='10.46.254.5 10.46.254.32/29 10.46.254.212/30'
+SRCviaDEFAULT='10.46.254.5 10.46.254.32/29 10.46.254.212/30 10.46.254.216'
 
 ##############################################################################
 ### This needs to be configured only if you intend to use the
@@ -201,6 +201,8 @@ DBG='' ; [ "$1" = '--debug' ] && { DBG=y ; SILENT='' ; shift ; }
 dbg() { [ "$DBG" ] && printf '%s\n' "$*" >&2 ; }
 RESOLV=''; [ "$1" = '--dns' ] && { RESOLV='/etc/resolv.conf' ; shift ; }
 BIND='';   [ "$1" = '--named' ] && { BIND=y ; shift ; }
+RULEROUTE=y; [ "$1" = '--noroute' ] && { RULEROUTE='' ; shift ; }
+
 defaultroute() {
     ip route show table main 2>/dev/null | grep -E '^default' | grep -oE 'via .*' | while read DEFAULTROUTE; do
 	eval "ip route add table main $1 $DEFAULTROUTE" 2>/dev/null
@@ -216,7 +218,9 @@ dbg _all2mainprio=$_all2mainprio
 dbg _all2defaultprio=$_all2defaultprio
 dbg RESOLV=$RESOLV
 dbg BIND=$BIND
+dbg RULEROUTE=$RULEROUTE
 dbg NAMEDCONF=$NAMEDCONF
+#exit 0
 
 ##############################################################################
 # Check that things are as we expect them to be
@@ -242,6 +246,10 @@ info() {
 	    ip route show table $t
 	}
     done
+    [ -r "$NAMEDCONF" ] && {
+	printf '\n# named forwarders:\n'
+	grep -Ee '^\s*forwarders\s*\{' "$NAMEDCONF"
+    }
     printf '###\n'
 }
 ##############################################################################
@@ -390,21 +398,23 @@ ip address add $ADDR peer $GW dev $IFACE || exit 1
 wg setconf $IFACE $CONF || exit 1
 ip link set up dev $IFACE || exit 1
 
-for cidr in $DSTviaDEFAULT; do
-    ip rule add to $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
-    ip rule add to $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
-done
-for cidr in $SRCviaDEFAULT; do
-    ip rule add from $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
-    ip rule add from $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
-done
-for cidr in $SRCviaPROTON; do
-    ip rule add from $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
-done
-for cidr in $DSTviaPROTON; do
-    ip rule add to $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
-done
-ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null 
+[ "$RULEROUTE" ] && {
+    for cidr in $DSTviaDEFAULT; do
+	ip rule add to $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
+	ip rule add to $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
+    done
+    for cidr in $SRCviaDEFAULT; do
+	ip rule add from $cidr lookup main prio $_viaDEFAULTmainprio 2>/dev/null
+	ip rule add from $cidr lookup default prio $_viaDEFAULTdefaultprio 2>/dev/null
+    done
+    for cidr in $SRCviaPROTON; do
+	ip rule add from $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
+    done
+    for cidr in $DSTviaPROTON; do
+	ip rule add to $cidr lookup $_viaPROTONprio prio $_viaPROTONprio 2>/dev/null
+    done
+    ip route add default via $GW dev $IFACE table $_viaPROTONprio 2>/dev/null 
+}
 
 [ "$BIND" ] && {
     #perl -pi -e "s/^(\\s*forwarders\s*{)\\s*\$/\$1 $GW;\n/" "$NAMEDCONF"
